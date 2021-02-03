@@ -18,7 +18,7 @@ myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["ports"]
 collection = mydb["devices_ports"]              
 
-base_url = 'https://primeinfrasandbox.cisco.com/webacs/api/v3/data'
+base_url = 'https://' + PI + '/webacs/api/v3/data'
 
 url = base_url + '/Devices.json'
 
@@ -36,7 +36,6 @@ for device in response['queryResponse']['entityId']:
 
     response = requests.request('GET', url,auth=HTTPBasicAuth(USER, PASSWORD), headers=headers, data = payload)
     response = json.loads(response.text)
-    #json_formatted_str = json.dumps(response, indent=2)
     print('----------------------------')
     try:
       if (response['queryResponse']['entity'][0]['inventoryDetailsDTO']['summary']['deviceName'] in device_names):

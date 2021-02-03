@@ -12,8 +12,7 @@ myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["ports"]
 collection = mydb["devices_ports"]
 
-
-base_url = 'https://primeinfrasandbox.cisco.com/webacs/api/v1/op'
+base_url = 'https://' + PI + '/webacs/api/v1/op'
 
 url = base_url + '/statisticsService/interface/details.json'
 
@@ -42,7 +41,59 @@ for document in collection.find():
         print(delta.days ," days offline")
 
         if delta.days > 59:
-            print("shutting down port")
+            print("changing vlan")
+
+            BASE="https://%s:%s@%s/webacs/api/v1/" %(USER,PASSWORD,PI)
+
+
+            CLI_TEMPLATE = {
+            "cliTemplateCommand" : {
+                "targetDevices" : {
+                "targetDevice" : {
+                    "targetDeviceID" : document["device_id"],
+                    "variableValues" : {
+                    "variableValue": [
+                        {
+                        "name": "InterfaceName",
+                        "value": document["port_name"]
+                        },
+                        {
+                        "name": "Description",
+                        "value": "api testing"
+                        },
+                        {
+                        "name": "StaticAccessVLan",
+                        "value": "5"
+                        },
+                        {
+                        "name": "A1",
+                        "value": ""
+                        },
+                        { "name": "NativeVLan", "value": ""},
+                        { "name": "duplexField","value": ""},
+                        { "name": "TrunkAllowedVLan","value": "" },
+                        { "name": "spd","value": "" },
+                        { "name": "VoiceVlan" ,"value": ""},
+                        { "name": "PortFast","value": "" }
+                    ]
+
+                    }
+                }
+                },
+                "templateName" : "Configure Interface for device " + document["device_id"] + " " + document["port_name"]
+            }
+            }
+
+            job_result = ci.submit_template_job(BASE, CLI_TEMPLATE)
+
+            print(json.dumps(job_result, indent=2))
+
+            jobname = job_result['mgmtResponse']['cliTemplateCommandJobResult']['jobName']
+            jobresponse = ci.wait_for_job(BASE, jobname)
+            print(json.dumps(jobresponse, indent=2))
+
+            history = ci.get_full_history(BASE, jobname)
+            print(json.dumps(history, indent=2))
 
         print("-----------------------")
 
